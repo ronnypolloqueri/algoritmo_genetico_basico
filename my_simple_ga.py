@@ -52,12 +52,15 @@ class MySimpleGA(object):
         print "Número de generaciones: %d" % self.num_generaciones
         print "Número de Individuos: \t%d" % self.num_individuos
         print "Numero de seleccionados: %d" % self.num_seleccionados
+        self.inicializar_poblacion()
+        self.ordenar_poblacion()
+        print "Población: %s" % self.poblacion
         print "="*40
 
     def run(self):
-        self.inicializar_poblacion()
-        self.ordenar_poblacion()
         self.mejor_individuo = self.poblacion[0]
+        print "Generación %d: \t%s" % ( self.generacion_actual,
+                                        self.mejor_individuo )
 
         while self.generacion_actual <= self.num_generaciones and not self.esta_terminado():
 
@@ -96,6 +99,11 @@ class MySimpleGA(object):
             p.set_fitness(fitness)
 
     def cruzar_poblacion(self, seleccionados):
+        #self.cruce_de_un_punto(seleccionados)
+        #self.cruce_de_dos_puntos(seleccionados)
+        self.cruce_uniforme(seleccionados)
+
+    def cruce_de_un_punto(self, seleccionados):
         for p in self.poblacion[self.num_seleccionados:]:
             padres = random.sample(seleccionados, 2)
             punto  = random.randint(1, self.num_genes - 1)
@@ -103,6 +111,35 @@ class MySimpleGA(object):
             cromosoma[:punto] = padres[0].get_cromosoma()[:punto]
             cromosoma[punto:] = padres[1].get_cromosoma()[punto:]
             p.set_cromosoma(cromosoma)
+
+    def cruce_de_dos_puntos(self, seleccionados):
+        for p in self.poblacion[self.num_seleccionados:]:
+            padres = random.sample(seleccionados, 2)
+            punto1 = random.randint(1, self.num_genes / 2)
+            punto2 = random.randint(self.num_genes / 2, self.num_genes -1)
+            cromosoma = p.get_cromosoma()
+            cromosoma[:punto1] = padres[0].get_cromosoma()[:punto1]
+            cromosoma[punto1:punto2] = padres[1].get_cromosoma()[punto1:punto2]
+            cromosoma[punto2:] = padres[0].get_cromosoma()[punto2:]
+            p.set_cromosoma(cromosoma)
+
+    def cruce_uniforme(self, seleccionados):
+        mascara = self.crear_mascara( self.num_genes )
+        for p in self.poblacion[self.num_seleccionados:]:
+            padres = random.sample(seleccionados, 2)
+            punto  = random.randint(1, self.num_genes - 1)
+            cromosoma = p.get_cromosoma()
+            for i in range( self.num_genes ):
+                cromosoma[i] = padres[mascara[i]].get_cromosoma()[i]
+            p.set_cromosoma(cromosoma)
+
+    # para cruce uniforme
+    def crear_mascara(self, longitud):
+        mascara = []
+        for i in range(longitud):
+            valor = 1 if random.random() > 0.5 else 0
+            mascara.append(valor)
+        return mascara
 
 
     def mutar_poblacion(self):
@@ -115,6 +152,7 @@ class MySimpleGA(object):
                     nuevo_gen = random.randint(1,self.num_genes)
                 cromosoma[punto] = nuevo_gen
                 p.set_cromosoma(cromosoma)
+
 if __name__ == "__main__":
     if len(sys.argv) == 2 and ( sys.argv[1] == "-h" or sys.argv[1] == "--help"):
         print "MySimpleGA (1.0)"
